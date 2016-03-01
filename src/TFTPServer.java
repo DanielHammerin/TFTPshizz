@@ -9,11 +9,11 @@ public class TFTPServer {
     public static final int BUFSIZE = 512;
     public static final String READDIR = "/home/username/read/";
     public static final String WRITEDIR = "/home/username/write/";
-    public static final int OP_RRQ = 1;
-    public static final int OP_WRQ = 2;
-    public static final int OP_DAT = 3;
-    public static final int OP_ACK = 4;
-    public static final int OP_ERR = 5;
+    public static final int OP_RRQ = 1;                                 //Op code for read request
+    public static final int OP_WRQ = 2;                                 //Op code for write request
+    public static final int OP_DAT = 3;                                 //Op code for data
+    public static final int OP_ACK = 4;                                 //Op code for acknowledge
+    public static final int OP_ERR = 5;                                 //Op code for error
 
     public static void main(String[] args) {
         if (args.length > 0) {
@@ -40,8 +40,7 @@ public class TFTPServer {
         System.out.printf("Listening at port %d for new requests\n", TFTPPORT);
 
         while(true) {        /* Loop to handle various requests */
-            final InetSocketAddress clientAddress=
-                    receiveFrom(socket, buf);
+            final InetSocketAddress clientAddress= receiveFrom(socket, buf);
             if (clientAddress == null) /* If clientAddress is null, an error occurred in receiveFrom()*/
                 continue;
 
