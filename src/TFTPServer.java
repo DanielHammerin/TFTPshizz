@@ -8,7 +8,7 @@ public class TFTPServer {
     public static final int TFTPPORT = 4950;
     public static final int BUFSIZE = 512;
     public static final String READDIR = "/home/username/read/";
-    public static final String WRITEDIR = "/home/username/write/";
+    public static final String WRITEDIR = "/src/write/";
     public static final int OP_RRQ = 1;                                 //Op code for read request
     public static final int OP_WRQ = 2;                                 //Op code for write request
     public static final int OP_DAT = 3;                                 //Op code for data
@@ -44,7 +44,7 @@ public class TFTPServer {
             if (clientAddress == null) /* If clientAddress is null, an error occurred in receiveFrom()*/
                 continue;
 
-            final StringBuffer requestedFile= new StringBuffer();
+            final StringBuffer requestedFile = new StringBuffer();
             final int reqtype = ParseRQ(buf, requestedFile);
 
             new Thread() {
