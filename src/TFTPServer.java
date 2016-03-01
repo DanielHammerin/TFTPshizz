@@ -1,14 +1,13 @@
 
-import java.net.DatagramSocket;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.net.SocketException;
+import java.io.IOException;
+import java.net.*;
+import java.nio.ByteBuffer;
 
 public class TFTPServer {
     public static final int TFTPPORT = 4950;
     public static final int BUFSIZE = 512;
-    public static final String READDIR = "/home/username/read/";
-    public static final String WRITEDIR = "/src/write/";
+    public static final String READDIR = "src/username/read/";
+    public static final String WRITEDIR = "src/write/";
     public static final int OP_RRQ = 1;                                 //Op code for read request
     public static final int OP_WRQ = 2;                                 //Op code for write request
     public static final int OP_DAT = 3;                                 //Op code for data
@@ -80,11 +79,17 @@ public class TFTPServer {
      */
 
     private InetSocketAddress receiveFrom(DatagramSocket socket, byte[] buf) {
-        return null;
+        InetSocketAddress addr = new InetSocketAddress(socket.getInetAddress(), socket.getPort());
+
+        return addr;
     }
 
     private int ParseRQ(byte[] buf, StringBuffer requestedFile) {
-        return 0;
+        ByteBuffer wrap = ByteBuffer.wrap(buf);
+        short opcode = wrap.getShort();
+        String fileName = new String(buf, 2, BUFSIZE-2);
+        requestedFile.append(fileName);
+        return opcode;
     }
 
     private void HandleRQ(DatagramSocket sendSocket, String string, int opRrq) {
