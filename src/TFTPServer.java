@@ -40,6 +40,7 @@ public class TFTPServer {
 
         while(true) {        /* Loop to handle various requests */
             final InetSocketAddress clientAddress= receiveFrom(socket, buf);
+
             if (clientAddress == null) /* If clientAddress is null, an error occurred in receiveFrom()*/
                 continue;
 
@@ -80,19 +81,26 @@ public class TFTPServer {
 
     private InetSocketAddress receiveFrom(DatagramSocket socket, byte[] buf) {
         InetSocketAddress addr = new InetSocketAddress(socket.getInetAddress(), socket.getPort());
-
+        DatagramPacket recievepacket = new DatagramPacket(buf, buf.length);
+        try {
+            socket.receive(recievepacket);
+        } catch (IOException e) {
+            System.out.println("Shitsticks happened yao.");
+            e.printStackTrace();
+        }
         return addr;
     }
 
     private int ParseRQ(byte[] buf, StringBuffer requestedFile) {
         ByteBuffer wrap = ByteBuffer.wrap(buf);
         short opcode = wrap.getShort();
-        String fileName = new String(buf, 2, BUFSIZE-2);
+        String fileName = new String(buf, 2, buf.length-2);
         requestedFile.append(fileName);
         return opcode;
     }
 
     private void HandleRQ(DatagramSocket sendSocket, String string, int opRrq) {
+
     }
 }
 
