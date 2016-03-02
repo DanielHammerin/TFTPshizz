@@ -15,7 +15,7 @@ public class TFTPServer {
     public static final short OP_ERR = 5;                                 //Op code for error
     public static final short ERR_LOST = 0;             //When a file gets lost
     public static final short ERR_FNF = 1;              //when a file is not found
-    public static final short ERR_ACCESS = 2;           
+    public static final short ERR_ACCESS = 2;
     public static final short ERR_EXISTS = 6;
     public static byte[] buf;
     public static FileOutputStream fos;
@@ -138,7 +138,7 @@ public class TFTPServer {
     }
 
     private void HandleRQ(DatagramSocket clientSocket, String requestedFilestring, int opRrq) {
-        DatagramPacket datapacket = new DatagramPacket(buf, buf.length);
+
 
         System.out.println(requestedFilestring);
         File file = new File(requestedFilestring);
@@ -147,15 +147,15 @@ public class TFTPServer {
             case 1:     //Write
                 FileInputStream in = null;
                 try {
-                    in = new FileInputStream(file);
+                    in = new FileInputStream(file);  //Reading the File from the client
 
                 } catch (FileNotFoundException e) {
                     System.err.println("file not found ");
-                    sendError(clientSocket, ERR_FNF, "");
+                    sendError(clientSocket, ERR_FNF, "");   //If the file cannot be found we send an error message
                     return;
                 }
 
-                short blockNum = 1;
+                short blockNum = 1;  //block num refers to the current bytes of data that are sent in the file
 
                 while (true) {
                     int length;
@@ -168,10 +168,10 @@ public class TFTPServer {
                     if (length == -1) {
                         length = 0;
                     }
-                    DatagramPacket sender = dataPacket(blockNum, buf, length);
+                    DatagramPacket sender = dataPacket(blockNum, buf, length); //sending the first few bytes of the file
                     System.out.println("sending file....");
-                    if (WriteAndReadAck(clientSocket, sender, blockNum++)) {
-                        System.out.println("file is sending " + blockNum);
+                    if (WriteAndReadAck(clientSocket, sender, blockNum++)) { //checking to see if the ACK value is correct
+                        System.out.println("file is sending " + blockNum); //prints out the number of which file
 
                     } else {
                         System.err.println("Error. Lost connection.");
@@ -192,7 +192,7 @@ public class TFTPServer {
 
                 if (file.exists()) {
                     System.out.println("file is already there");
-                    sendError(clientSocket, ERR_EXISTS, "File already exists" );
+                    sendError(clientSocket, ERR_EXISTS, "File already exists");
                     return;
                 } else {
                     FileOutputStream out = null;
@@ -335,7 +335,7 @@ public class TFTPServer {
         byte[] rec = new byte[BUFSIZE];
         DatagramPacket receiver = new DatagramPacket(rec, rec.length);
 
-        while(true) {
+        while (true) {
             if (retryCount >= 6) {
                 System.err.println("Timed out. Closing connection.");
                 return false;
@@ -343,7 +343,7 @@ public class TFTPServer {
             try {
                 sendSocket.send(sender);
                 System.out.println("Sent.");
-                sendSocket.setSoTimeout(((int) Math.pow(2, retryCount++))*1000);
+                sendSocket.setSoTimeout(((int) Math.pow(2, retryCount++)) * 1000);
                 sendSocket.receive(receiver);
 
 	            /* _______________ Dissect Datagram and Test _______________ */
@@ -359,7 +359,7 @@ public class TFTPServer {
                     retryCount = 0;
                     throw new SocketTimeoutException();
                 }
-	            /* ^^^^^^^^^^^^^^^ Dissect Datagram and Test ^^^^^^^^^^^^^^^ */
+                /* ^^^^^^^^^^^^^^^ Dissect Datagram and Test ^^^^^^^^^^^^^^^ */
 
             } catch (SocketTimeoutException e) {
                 System.out.println("Timeout. Resending.");
@@ -411,7 +411,7 @@ public class TFTPServer {
         wrap.put(errMsg.getBytes());
         wrap.put((byte) 0);
 
-        DatagramPacket receivePacket = new DatagramPacket(wrap.array(),wrap.array().length);
+        DatagramPacket receivePacket = new DatagramPacket(wrap.array(), wrap.array().length);
         try {
             sendSocket.send(receivePacket);
         } catch (IOException e) {
