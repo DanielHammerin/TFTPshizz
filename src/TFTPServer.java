@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 public class TFTPServer {
     public static final int TFTPPORT = 4950;
     public static final int BUFSIZE = 512;
-    public static final String READDIR = "src/username/read/";
+    public static final String READDIR = "src/read/";
     public static final String WRITEDIR = "src/write/";
     public static final int OP_RRQ = 1;                                 //Op code for read request
     public static final int OP_WRQ = 2;                                 //Op code for write request
@@ -39,7 +39,7 @@ public class TFTPServer {
         System.out.printf("Listening at port %d for new requests\n", TFTPPORT);
 
         while(true) {        /* Loop to handle various requests */
-            final InetSocketAddress clientAddress= receiveFrom(socket, buf);
+            final InetSocketAddress clientAddress = receiveFrom(socket, buf);
 
             if (clientAddress == null) /* If clientAddress is null, an error occurred in receiveFrom()*/
                 continue;
