@@ -144,7 +144,7 @@ public class TFTPServer {
         File file = new File(requestedFilestring);
         byte[] buf = new byte[BUFSIZE - 4];
         switch (opRrq) {
-            case 1:     //Write
+            case 1:     //Read
                 FileInputStream in = null;
                 try {
                     in = new FileInputStream(file);  //Reading the File from the client
@@ -179,7 +179,7 @@ public class TFTPServer {
                         return;
                     }
 
-                    if (length < 512) {
+                    if (length < 512) {       //need to close the file if it is smaller than the buf size
                         try {
                             in.close();
                         } catch (IOException e) {
@@ -188,7 +188,7 @@ public class TFTPServer {
                         break;
                     }
                 }
-            case 2:     //Read
+            case 2:     //Write
 
                 if (file.exists()) {
                     System.out.println("file is already there");
@@ -197,7 +197,7 @@ public class TFTPServer {
                 } else {
                     FileOutputStream out = null;
                     try {
-                        out = new FileOutputStream(file);
+                        out = new FileOutputStream(file);   //reading the file into the inputstream buffer
 
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
@@ -210,7 +210,7 @@ public class TFTPServer {
 
 
                     while (true) {
-                        DatagramPacket datagramPacket = ReadAndWriteData(clientSocket, ackPacket(blockNum++), blockNum);
+                        DatagramPacket datagramPacket = readingDataToWrite(clientSocket, ackPacket(blockNum++), blockNum); //creating the packet of data to be sent
 
                         if (datagramPacket == null) {
                             System.err.println("Lost the connection");
@@ -223,7 +223,7 @@ public class TFTPServer {
                                 break;
                             }
                         } else {
-                            byte[] data = datagramPacket.getData();
+                            byte[] data = datagramPacket.getData(); //making a byte array of the data packet to be sent
                             try {
                                 out.write(data, 4, datagramPacket.getLength() - 4);
                                 System.out.println(datagramPacket.getLength());
@@ -234,7 +234,7 @@ public class TFTPServer {
 
                             }
                         }
-                        if (datagramPacket.getLength() - 4 < 512) {
+                        if (datagramPacket.getLength() - 4 < 512) {  //file should have been sent
                             try {
                                 clientSocket.send(ackPacket(blockNum));
                             } catch (IOException e) {
@@ -272,7 +272,7 @@ public class TFTPServer {
     } // dataPacket
 
 
-    private DatagramPacket ReadAndWriteData(DatagramSocket sendSocket, DatagramPacket sendAck, short block) {
+    private DatagramPacket readingDataToWrite(DatagramSocket sendSocket, DatagramPacket sendAck, short block) {
         int retryCount = 0;
         byte[] rec = new byte[BUFSIZE];
         DatagramPacket receiver = new DatagramPacket(rec, rec.length);
@@ -316,7 +316,7 @@ public class TFTPServer {
                 }
             }
         }
-    } // ReadAndWriteData
+    } // readingDataToWrite
 
     private short getData(DatagramPacket data) {
         ByteBuffer buffer = ByteBuffer.wrap(data.getData());
