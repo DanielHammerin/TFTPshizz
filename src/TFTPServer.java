@@ -6,17 +6,21 @@ import java.nio.ByteBuffer;
 public class TFTPServer {
     public static final int TFTPPORT = 4950;
     public static final int BUFSIZE = 516;
+
     public static final String READDIR = "src/read/";
     public static final String WRITEDIR = "src/write/";
+
     public static final short OP_RRQ = 1;                                 //Op code for read request
     public static final short OP_WRQ = 2;                                 //Op code for write request
     public static final short OP_DAT = 3;                                 //Op code for data
     public static final short OP_ACK = 4;                                 //Op code for acknowledge
     public static final short OP_ERR = 5;                                 //Op code for error
+
     public static final short ERR_LOST = 0;             //When a file gets lost
     public static final short ERR_FNF = 1;              //when a file is not found
     public static final short ERR_ACCESS = 2;
     public static final short ERR_EXISTS = 6;
+
     public static byte[] buf;
     public static FileOutputStream fos;
     public static String mode;
@@ -88,9 +92,9 @@ public class TFTPServer {
     /**
      * Reads the first block of data, i.e., the request for action (read or write).
      *
-     * @param socket socket to read from
-     * @param buf    where to store the read data
-     * @return the Internet socket address of the client
+     * @param socket        Socket to read from.
+     * @param buf           Where to store the read data.
+     * @return              The Internet socket address of the client.
      */
 
     private InetSocketAddress receiveFrom(DatagramSocket socket, byte[] buf) {
@@ -104,6 +108,12 @@ public class TFTPServer {
         return addr;
     }
 
+    /**
+     * Method for Parsing request and checking if it's read or write.
+     *
+     * @param buf               The byte buffer set in start of program. (516 bytes)
+     * @param requestedFile     String buffer to store the file name of the file wanted.
+     */
     private int ParseRQ(byte[] buf, StringBuffer requestedFile) {
        // System.out.println(requestedFile);
         ByteBuffer wrap = ByteBuffer.wrap(buf);
@@ -144,6 +154,13 @@ public class TFTPServer {
 
     }
 
+    /**
+     * Method for handling the request from the client.
+     *
+     * @param clientSocket              Datagram socket that the client is connected form.
+     * @param requestedFilestring       The requested file string set in ParseRQ.
+     * @param opRrq                     Op code for request.
+     */
     private void HandleRQ(DatagramSocket clientSocket, String requestedFilestring, int opRrq) {
 
 
@@ -278,6 +295,14 @@ public class TFTPServer {
         }
     }
 
+    /**
+     * Method for creating a datagram packet to send.
+     *
+     * @param block     The blocknumber of the block being created.
+     * @param data      The data read in from a byte[].
+     * @param length    The length of the packet.
+     * @return          Return the new packet.
+     */
     private DatagramPacket dataPacket(short block, byte[] data, int length) {
 
         ByteBuffer buffer = ByteBuffer.allocate(BUFSIZE);
@@ -286,9 +311,17 @@ public class TFTPServer {
         buffer.put(data, 0, length);
 
         return new DatagramPacket(buffer.array(), 4 + length);
-    } // dataPacket
+    }
 
-
+    /**
+     * Method for packeting data to send.
+     * Takes blocks from file and sends them in order.
+     *
+     * @param sendSocket        Client socket to send to client.
+     * @param sendAck           Acknowledgement packet with blocknumber.
+     * @param block             Blocknumber.
+     * @return                  Receiver packet.
+     */
     private DatagramPacket readingDataToWrite(DatagramSocket sendSocket, DatagramPacket sendAck, short block) {
         int retryCount = 0;
         byte[] rec = new byte[BUFSIZE];
@@ -333,8 +366,14 @@ public class TFTPServer {
                 }
             }
         }
-    } // readingDataToWrite
+    }
 
+    /**
+     * Method for getting opcode.
+     *
+     * @param data      Datagram packet receiving from client.
+     * @return          Returns -1 if opcode = OP_ERR. Returns opcode otherwise.
+     */
     private short getData(DatagramPacket data) {
         ByteBuffer buffer = ByteBuffer.wrap(data.getData());
         short opcode = buffer.getShort();
@@ -345,8 +384,15 @@ public class TFTPServer {
         }
 
         return buffer.getShort();
-    } // getData
+    }
 
+    /**
+     * Method for
+     * @param sendSocket        Client socket.
+     * @param sender            packet with blocknumber, data and length.
+     * @param blockNum          Block number.
+     * @return                  Booleans depending on the outcome of the check.
+     */
     private boolean WriteAndReadAck(DatagramSocket sendSocket, DatagramPacket sender, short blockNum) {
         int retryCount = 0;
         byte[] rec = new byte[BUFSIZE];
@@ -355,28 +401,27 @@ public class TFTPServer {
         while (true) {
             if (retryCount >= 6) {
                 System.err.println("File is complete");
-                return false;
+                return false;                           //Nothing more to send
             }
             try {
                 sendSocket.send(sender);
-                System.out.println("Sent.");
+                System.out.println("Sent.");        //Sent packet
                 sendSocket.setSoTimeout(((int) Math.pow(2, retryCount++)) * 1000);
                 sendSocket.receive(receiver);
 
 
                 short ack = getAck(receiver);
 //	            System.out.println("Ack received: " + ack);
-                if (ack == blockNum) {
+                if (ack == blockNum) {          //If ack matches block number
 //	            	System.out.println("Received correct OP_ACK");
                     return true;
-                } else if (ack == -1) {
+                } else if (ack == -1) {        //if it's -1 something went wrong.
                     return false;
                 } else {
 //	            	System.out.println("Ignore. Wrong ack.");
                     retryCount = 0;
                     throw new SocketTimeoutException();
                 }
-                /* ^^^^^^^^^^^^^^^ Dissect Datagram and Test ^^^^^^^^^^^^^^^ */
 
             } catch (SocketTimeoutException e) {
                 System.out.println("Timeout. Resending.");
@@ -390,8 +435,13 @@ public class TFTPServer {
                 }
             }
         }
-    } // WriteAndReadAck
+    }
 
+    /**
+     * Method for getting the acknowledge message.
+     * @param ack       Ack-packet.
+     * @return
+     */
     private short getAck(DatagramPacket ack) {
         ByteBuffer buffer = ByteBuffer.wrap(ack.getData());
         short opcode = buffer.getShort();
@@ -405,9 +455,7 @@ public class TFTPServer {
     } // getAck
 
     private void parseError(ByteBuffer buffer) {
-
         short errCode = buffer.getShort();
-
         byte[] buf = buffer.array();
         for (int i = 4; i < buf.length; i++) {
             if (buf[i] == 0) {
