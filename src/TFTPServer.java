@@ -6,8 +6,8 @@ import java.nio.ByteBuffer;
 public class TFTPServer {
     public static final int TFTPPORT = 4950;
     public static final int BUFSIZE = 516;
-    public static final String READDIR = "src/read/w0ah.txt";
-    public static final String WRITEDIR = "src/write/awshiet.txt";
+    public static final String READDIR = "src/read/";
+    public static final String WRITEDIR = "src/write/";
     public static final short OP_RRQ = 1;                                 //Op code for read request
     public static final short OP_WRQ = 2;                                 //Op code for write request
     public static final short OP_DAT = 3;                                 //Op code for data
@@ -65,7 +65,7 @@ public class TFTPServer {
                         DatagramSocket clientSocket = new DatagramSocket(0);
                         clientSocket.connect(clientAddress);
 
-                        System.out.printf("%s request for %s from %s using port %d\n",
+                        System.out.printf("%s request for %s from %s using port \n" + TFTPPORT + " ",
                                 (reqtype == OP_RRQ) ? "Read" : "Write",
                                 clientAddress.getHostName(), clientAddress.getPort());
 
@@ -105,11 +105,12 @@ public class TFTPServer {
     }
 
     private int ParseRQ(byte[] buf, StringBuffer requestedFile) {
+       // System.out.println(requestedFile);
         ByteBuffer wrap = ByteBuffer.wrap(buf);
         short opcode = wrap.getShort();
         int n = -1; //delimiter
         for (int i = 2; i < buf.length; i++) {
-            if (buf[i] == 0) {
+            if (buf[i] == 0) {                      //loop to determine file name until we reach the zero
                 n = i;
                 break;
             }
@@ -120,28 +121,37 @@ public class TFTPServer {
         }
 
         String fileName = new String(buf, 2, buf.length - 2);
-        requestedFile.append(fileName);
 
-        for (int i = n + 1; i < buf.length; i++) {
+        requestedFile.append(fileName);
+        //System.out.println(fileName);
+
+        for (int i = n+1; i < buf.length; i++) {            //extracting the mode
             if (buf[i] == 0) {
-                String s = new String(buf, n + 1, i - (n - 1));
-                mode = s;
-                if (s.equalsIgnoreCase("octet")) {
+                String temp = new String(buf,n+1,i-(n+1));
+				System.out.println("the mode specified is = " + temp);
+                mode = temp;
+                if (temp.equalsIgnoreCase("octet")) {
                     return opcode;
                 } else {
-                    System.out.println("I fucked your mother last nigt <3");
+                    System.err.println("No mode specified.");
                     System.exit(1);
                 }
             }
         }
+        System.err.println("Did not find delimiter.");
+        System.exit(1);
         return 0;
+
     }
 
     private void HandleRQ(DatagramSocket clientSocket, String requestedFilestring, int opRrq) {
 
 
-        System.out.println(requestedFilestring);
-        File file = new File(requestedFilestring);
+      //  System.out.println(requestedFilestring);
+        String[] split = requestedFilestring.split("\0");
+        //System.out.println(split[0]);
+        //System.out.println(split[1]);
+        File file = new File(split[0]);
         byte[] buf = new byte[BUFSIZE - 4];
         switch (opRrq) {
             case 1:     //Read
@@ -234,16 +244,23 @@ public class TFTPServer {
 
                             }
                         }
-                        if (datagramPacket.getLength() - 4 < 512) {  //file should have been sent
+                        //the last packet sent
+                        if (((datagramPacket.getLength() - 4) < 512) || datagramPacket.getLength() == 0) {
                             try {
                                 clientSocket.send(ackPacket(blockNum));
                             } catch (IOException e) {
+                                try {
+                                    Thread.sleep(100);
+                                } catch (InterruptedException e1) {
+                                    e1.printStackTrace();
+                                }
+                                System.out.println("File has been written");
                                 try {
                                     clientSocket.send(ackPacket(blockNum));
                                 } catch (IOException e1) {
 
                                 }
-                                System.out.println("File has been written");
+
 
                                 try {
                                     out.close();
@@ -337,7 +354,7 @@ public class TFTPServer {
 
         while (true) {
             if (retryCount >= 6) {
-                System.err.println("Timed out. Closing connection.");
+                System.err.println("File is complete");
                 return false;
             }
             try {
@@ -346,7 +363,7 @@ public class TFTPServer {
                 sendSocket.setSoTimeout(((int) Math.pow(2, retryCount++)) * 1000);
                 sendSocket.receive(receiver);
 
-	            /* _______________ Dissect Datagram and Test _______________ */
+
                 short ack = getAck(receiver);
 //	            System.out.println("Ack received: " + ack);
                 if (ack == blockNum) {
