@@ -135,7 +135,7 @@ public class TFTPServer {
         requestedFile.append(fileName);
         //System.out.println(fileName);
 
-        for (int i = n+1; i < buf.length; i++) {            //extracting the mode
+        for (int i = n+1; i < buf.length; i++) {            //extracting the mode (This code only handles octet)
             if (buf[i] == 0) {
                 String temp = new String(buf,n+1,i-(n+1));
 				System.out.println("the mode specified is = " + temp);
@@ -143,12 +143,12 @@ public class TFTPServer {
                 if (temp.equalsIgnoreCase("octet")) {
                     return opcode;
                 } else {
-                    System.err.println("No mode specified.");
+                    System.err.println("No mode specified.");//If the mode is not octet.
                     System.exit(1);
                 }
             }
         }
-        System.err.println("Did not find delimiter.");
+        System.err.println("Did not find the delimiter.");
         System.exit(1);
         return 0;
 
@@ -172,13 +172,13 @@ public class TFTPServer {
         byte[] buf = new byte[BUFSIZE - 4];
         switch (opRrq) {
             case 1:     //Read
-                FileInputStream in = null;
+                FileInputStream in;
                 try {
-                    in = new FileInputStream(file);  //Reading the File from the client
+                    in = new FileInputStream(file);  //Read in file form client
 
                 } catch (FileNotFoundException e) {
                     System.err.println("file not found ");
-                    sendError(clientSocket, ERR_FNF, "");   //If the file cannot be found we send an error message
+                    sendError(clientSocket, ERR_FNF, "");   //If the file cannot be found we send an error message.
                     return;
                 }
 
@@ -220,7 +220,7 @@ public class TFTPServer {
                 if (file.exists()) {
                     System.out.println("file is already there");
                     sendError(clientSocket, ERR_EXISTS, "File already exists");
-                    return;
+                    return;//Return so program doesn't stop
                 } else {
                     FileOutputStream out = null;
                     try {
@@ -231,8 +231,6 @@ public class TFTPServer {
                         sendError(clientSocket, ERR_ACCESS, "Could not Create File");
                         return;
                     }
-
-
                     blockNum = 0;
 
 
@@ -328,14 +326,14 @@ public class TFTPServer {
         DatagramPacket receiver = new DatagramPacket(rec, rec.length);
 
         while (true) {
-            if (retryCount >= 6) {
+            if (retryCount >= 6) {//Retries before terminating connection
                 System.err.println("Timed out. Closing connection.");
                 return null;
             }
             try {
                 System.out.println("sending ack for block: " + block);
                 sendSocket.send(sendAck);
-                sendSocket.setSoTimeout(((int) Math.pow(2, retryCount++)) * 1000);
+                sendSocket.setSoTimeout(((int) Math.pow(2, retryCount++)) * 1000);//Timeout timer (formula was recomended from internet forum)
                 sendSocket.receive(receiver);
 
                 short blockNum = getData(receiver);
@@ -440,7 +438,7 @@ public class TFTPServer {
     /**
      * Method for getting the acknowledge message.
      * @param ack       Ack-packet.
-     * @return
+     * @return          Ack message
      */
     private short getAck(DatagramPacket ack) {
         ByteBuffer buffer = ByteBuffer.wrap(ack.getData());
@@ -452,8 +450,12 @@ public class TFTPServer {
         }
 
         return buffer.getShort();
-    } // getAck
+    }
 
+    /**
+     * Method parses the error if ther is one.
+     * @param buffer        To get error message op code
+     */
     private void parseError(ByteBuffer buffer) {
         short errCode = buffer.getShort();
         byte[] buf = buffer.array();
@@ -466,8 +468,14 @@ public class TFTPServer {
             }
         }
 
-    } // parseError
+    }
 
+    /**
+     * Method for sending an error message packet.
+     * @param sendSocket        Endpoint.
+     * @param errorCode         The error code to send.
+     * @param errMsg            String of the error message.
+     */
     private void sendError(DatagramSocket sendSocket, short errorCode, String errMsg) {
 
         ByteBuffer wrap = ByteBuffer.allocate(BUFSIZE);
@@ -484,8 +492,13 @@ public class TFTPServer {
             e.printStackTrace();
         }
 
-    } // sendError
+    }
 
+    /**
+     * Method for creating an Ack-packet.
+     * @param block     blocknumber.
+     * @return          Ack packet for block number.
+     */
     private DatagramPacket ackPacket(short block) {
 
         ByteBuffer buffer = ByteBuffer.allocate(BUFSIZE);
@@ -493,7 +506,7 @@ public class TFTPServer {
         buffer.putShort(block);
 
         return new DatagramPacket(buffer.array(), 4);
-    } // ackPacket
+    }
 }
 
 
