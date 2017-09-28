@@ -4,7 +4,7 @@ This is a TFTP server implementation in Java.
 ## Authors 
 Austin Pontén & Daniel Hammerin
 
-##temp
+## temp
 DELETE FROM Classes
 WHERE class IN
 (SELECT class
